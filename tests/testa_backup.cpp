@@ -1,91 +1,103 @@
 #include <catch2/catch_test_macros.hpp>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <string>
+#include <system_error>
 
 #include "backup.hpp"
 
 namespace fs = std::filesystem;
 
+namespace {
+struct Cenario {
+    fs::path base;
+    fs::path hd;
+    fs::path pen;
+    fs::path parm;
+
+    explicit Cenario(const std::string& nome)
+        : base(fs::temp_directory_path() / ("backup_tdd_" + nome)),
+          hd(base / "hd"), pen(base / "pendrive"), parm(base / "Backup.parm") {
+        fs::remove_all(base);
+        fs::create_directories(hd);
+        fs::create_directories(pen);
+    }
+
+    ~Cenario() {
+        std::error_code ec;
+        fs::remove_all(base, ec);
+    }
+
+    void Lista(const std::string& nomes = "A.txt\n") {
+        Escrever(parm, nomes);
+    }
+
+    static void Escrever(const fs::path& arquivo, const std::string& texto) {
+        std::ofstream saida(arquivo, std::ios::binary);
+        REQUIRE(static_cast<bool>(saida));
+        saida << texto;
+        REQUIRE(static_cast<bool>(saida));
+    }
+
+    static std::string Ler(const fs::path& arquivo) {
+        std::ifstream entrada(arquivo, std::ios::binary);
+        REQUIRE(static_cast<bool>(entrada));
+        return std::string(std::istreambuf_iterator<char>(entrada),
+                           std::istreambuf_iterator<char>());
+    }
+
+    static void Data(const fs::path& arquivo, int horas) {
+        fs::last_write_time(arquivo, fs::file_time_type::clock::now() +
+                           std::chrono::hours(horas));
+    }
+
+    Resultado Executar() {
+        return executarBackup(parm.string(), hd.string(), pen.string());
+    }
+};
+}  // namespace
+
 TEST_CASE("R1 - Backup.parm nao existe", "[backup][R1]") {
+    Cenario c("r1");
 
-    // ARRANGE: preparar o cenário
-    const fs::path diretorioTeste = "test_data_r1";
-    const fs::path backupParm = diretorioTeste / "Backup.parm";
-
-    // Novos parâmetros
-    const fs::path hd = diretorioTeste / "hd";
-    const fs::path pendrive = diretorioTeste / "pendrive";
-
-    fs::create_directories(diretorioTeste);
-    fs::remove(backupParm);
-
-    // Verifica a precondição do teste
-    REQUIRE_FALSE(fs::exists(backupParm));
-
-    // ACT: executar a função
-    Resultado resultado = executarBackup(
-        backupParm.string(),
-        hd.string(),
-        pendrive.string());
-
-    // ASSERT: verificar o comportamento esperado
-    REQUIRE(resultado == Resultado::IMPOSSIVEL);
-
-    // Limpeza
-    fs::remove_all(diretorioTeste);
+    REQUIRE_FALSE(fs::exists(c.parm));
+    REQUIRE(c.Executar() == Resultado::IMPOSSIVEL);
 }
 
 TEST_CASE("R2 - Salvar A.txt no pendrive", "[backup][R2]") {
+    Cenario c("r2");
+    c.Lista();
+    c.Escrever(c.hd / "A.txt", "Conteudo original");
 
-    namespace fs = std::filesystem;
+    REQUIRE(fs::exists(c.parm));
+    REQUIRE(fs::exists(c.hd / "A.txt"));
+    REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
 
-    // ARRANGE
-    const fs::path base = "test_data_r2";
-    const fs::path hd = base / "hd";
-    const fs::path pendrive = base / "pendrive";
-    const fs::path parm = base / "Backup.parm";
+    REQUIRE(c.Executar() == Resultado::SALVAR);
+    REQUIRE(fs::exists(c.pen / "A.txt"));
+    REQUIRE(c.Ler(c.pen / "A.txt") == "Conteudo original");
+}
 
-    // Garantir ambiente inicial limpo
-    fs::remove_all(base);
+TEST_CASE("R3 - Atualizar A.txt mais antigo no pendrive", "[backup][R3]") {
+    Cenario c("r3");
+    c.Lista();
+    c.Escrever(c.hd / "A.txt", "Conteudo atualizado");
+    c.Escrever(c.pen / "A.txt", "Conteudo antigo");
+    c.Data(c.hd / "A.txt", 0);
+    c.Data(c.pen / "A.txt", -24);
 
-    fs::create_directories(hd);
-    fs::create_directories(pendrive);
+    REQUIRE(fs::is_regular_file(c.parm));
+    REQUIRE(fs::is_regular_file(c.hd / "A.txt"));
+    REQUIRE(fs::is_regular_file(c.pen / "A.txt"));
+    REQUIRE(fs::last_write_time(c.pen / "A.txt") <
+            fs::last_write_time(c.hd / "A.txt"));
 
-    // Criar Backup.parm
-    {
-        std::ofstream arquivo(parm);
-        arquivo << "A.txt\n";
-    }
+    const Resultado resultado = c.Executar();
 
-    // Criar A.txt no HD
-    {
-        std::ofstream arquivo(hd / "A.txt");
-        arquivo << "Conteudo original";
-    }
-
-    REQUIRE(fs::exists(parm));
-    REQUIRE(fs::exists(hd / "A.txt"));
-    REQUIRE_FALSE(fs::exists(pendrive / "A.txt"));
-
-    // ACT
-    Resultado resultado = executarBackup(
-        parm.string(),
-        hd.string(),
-        pendrive.string()
-    );
-
-    // ASSERT
-    REQUIRE(resultado == Resultado::SALVAR);
-    REQUIRE(fs::exists(pendrive / "A.txt"));
-
-    std::ifstream arquivoCopiado(pendrive / "A.txt");
-    std::string conteudo;
-    std::getline(arquivoCopiado, conteudo);
-
-    REQUIRE(conteudo == "Conteudo original");
-
-    // Limpeza
-    fs::remove_all(base);
+    // CHECK permite observar ambas as falhas esperadas da fase RED.
+    CHECK(resultado == Resultado::SALVAR);
+    CHECK(c.Ler(c.pen / "A.txt") == "Conteudo atualizado");
 }
