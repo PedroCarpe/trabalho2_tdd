@@ -8,9 +8,28 @@ namespace fs = std::filesystem;
 
 namespace {
     // Função auxiliar para verificar se o arquivo existe
-    bool arquivoExiste(const std::string& caminho) {
+    bool arquivoExiste(const fs::path& caminho) {
         return fs::is_regular_file(caminho);
     }
+
+    // Copia um arquivo da origem para o destino.
+// Retorna true se a copia for realizada com sucesso.
+bool salvarArquivo(
+    const fs::path& origem,
+    const fs::path& destino) {
+
+    std::error_code erro;
+
+    bool copiado = fs::copy_file(
+        origem,
+        destino,
+        fs::copy_options::none,
+        erro
+    );
+
+    return copiado && !erro;
+}
+
 }
 
 Resultado executarBackup(
@@ -18,9 +37,7 @@ Resultado executarBackup(
     const std::string& diretorioHd,
     const std::string& diretorioPendrive
 ) {
-    (void)diretorioHd; // Evita warnings de variável não utilizada
-    (void)diretorioPendrive; // Evita warnings de variável não utilizada
-
+    
     //Comportamento já implementado em R1
     if(!arquivoExiste(caminhoParm)) {
         return Resultado::ERRO;
@@ -44,18 +61,9 @@ Resultado executarBackup(
         fs::path origem = fs::path(diretorioHd) / nomeArquivo;
         fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
 
-        if (fs::is_regular_file(origem) && !fs::exists(destino)) {
+        if (arquivoExiste(origem) && !fs::exists(destino)) {
 
-            std::error_code erro;
-
-            bool copiado = fs::copy_file(
-                origem,
-                destino,
-                fs::copy_options::none,
-                erro
-            );
-
-            if (!copiado || erro) {
+            if (!salvarArquivo(origem, destino)) {
                 return Resultado::ERRO;
             }
 
