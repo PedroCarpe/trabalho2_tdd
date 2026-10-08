@@ -40,7 +40,7 @@ Resultado executarBackup(
     
     //Comportamento já implementado em R1
     if(!arquivoExiste(caminhoParm)) {
-        return Resultado::ERRO;
+        return Resultado::IMPOSSIVEL;
     }
 
 
