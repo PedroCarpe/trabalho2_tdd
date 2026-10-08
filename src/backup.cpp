@@ -23,7 +23,7 @@ bool salvarArquivo(
     bool copiado = fs::copy_file(
         origem,
         destino,
-        fs::copy_options::none,
+        fs::copy_options::overwrite_existing,
         erro
     );
 
@@ -61,7 +61,10 @@ Resultado executarBackup(
         fs::path origem = fs::path(diretorioHd) / nomeArquivo;
         fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
 
-        if (arquivoExiste(origem) && !fs::exists(destino)) {
+        if (arquivoExiste(origem) &&
+            (!fs::exists(destino) ||
+             (arquivoExiste(destino) &&
+              fs::last_write_time(destino) < fs::last_write_time(origem)))) {
 
             if (!salvarArquivo(origem, destino)) {
                 return Resultado::ERRO;
