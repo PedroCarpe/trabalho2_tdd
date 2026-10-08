@@ -11,6 +11,10 @@ enum class Resultado {
     ERRO
 };
 
-Resultado executarBackup(const std::string& caminhoParm);
+Resultado executarBackup(
+    const std::string& caminhoParm,
+    const std::string& diretorioHd,
+    const std::string& diretorioPendrive    
+);
 
 #endif
