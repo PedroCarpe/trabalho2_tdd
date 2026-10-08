@@ -8,7 +8,8 @@ enum class Resultado {
     RESTAURAR,
     EXCLUIR,
     NADA,
-    ERRO
+    ERRO,
+    IMPOSSIVEL
 };
 
 Resultado executarBackup(

@@ -31,7 +31,7 @@ TEST_CASE("R1 - Backup.parm nao existe", "[backup][R1]") {
         pendrive.string());
 
     // ASSERT: verificar o comportamento esperado
-    REQUIRE(resultado == Resultado::ERRO);
+    REQUIRE(resultado == Resultado::IMPOSSIVEL);
 
     // Limpeza
     fs::remove_all(diretorioTeste);
