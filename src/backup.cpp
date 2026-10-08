@@ -12,6 +12,11 @@ namespace {
         return fs::is_regular_file(caminho);
     }
 
+    // Compara as datas de modificação de dois arquivos existentes.
+    bool arquivoMaisAntigo(const fs::path& arquivo, const fs::path& referencia) {
+        return fs::last_write_time(arquivo) < fs::last_write_time(referencia);
+    }
+
     // Copia um arquivo da origem para o destino.
 // Retorna true se a copia for realizada com sucesso.
 bool salvarArquivo(
@@ -64,7 +69,7 @@ Resultado executarBackup(
         if (arquivoExiste(origem) &&
             (!fs::exists(destino) ||
              (arquivoExiste(destino) &&
-              fs::last_write_time(destino) < fs::last_write_time(origem)))) {
+              arquivoMaisAntigo(destino, origem)))) {
 
             if (!salvarArquivo(origem, destino)) {
                 return Resultado::ERRO;
