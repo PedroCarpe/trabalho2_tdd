@@ -1,5 +1,8 @@
 #include "backup.hpp"
 #include <filesystem>
+#include <fstream>
+#include <string>
+#include <system_error>    
 
 namespace fs = std::filesystem;
 
@@ -22,7 +25,44 @@ Resultado executarBackup(
     if(!arquivoExiste(caminhoParm)) {
         return Resultado::ERRO;
     }
+
+
+    std::ifstream parm(caminhoParm);
+
+    if (!parm.is_open()) {
+        return Resultado::ERRO;
+    }
+
+    std::string nomeArquivo;
+
+    while (std::getline(parm, nomeArquivo)) {
+
+        if (nomeArquivo.empty()) {
+            continue;
+        }
+
+        fs::path origem = fs::path(diretorioHd) / nomeArquivo;
+        fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
+
+        if (fs::is_regular_file(origem) && !fs::exists(destino)) {
+
+            std::error_code erro;
+
+            bool copiado = fs::copy_file(
+                origem,
+                destino,
+                fs::copy_options::none,
+                erro
+            );
+
+            if (!copiado || erro) {
+                return Resultado::ERRO;
+            }
+
+            return Resultado::SALVAR;
+        }
+    }
     
-    //Comportamento ainda não implementado em R2
+    //Comportamento provisório para outros cenários
     return Resultado::NADA;
 }
