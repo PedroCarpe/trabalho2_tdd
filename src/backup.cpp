@@ -42,7 +42,15 @@ bool salvarArquivo(
         erro
     );
 
-    return copiado && !erro;
+    if (!copiado || erro) {
+        return false;
+    }
+    const auto data = fs::last_write_time(origem, erro);
+    if (erro) {
+        return false;
+    }
+    fs::last_write_time(destino, data, erro);
+    return !erro;
 }
 
 // Decide e executa a ação quando os dois arquivos existem.
