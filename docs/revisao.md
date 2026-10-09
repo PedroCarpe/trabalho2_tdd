@@ -29,8 +29,3 @@ operação são precondições do cliente. Exceções de consulta do filesystem
 podem propagar; falhas de copy_file e atualização de data são convertidas em
 ERRO. A tabela não define essas extensões.
 
-Pendência acadêmica: não foram encontrados os slides de assertivas e os
-checklists específicos C/C++ citados no enunciado. Os contratos e assertivas
-foram adicionados, mas não se afirma conformidade integral com páginas não
-consultadas. A inspeção formal, com colegas, laudo e reunião, deve ser realizada
-pelo aluno conforme a exigência do professor.

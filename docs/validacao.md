@@ -42,10 +42,7 @@ provocadas e a expressão regular estão em cobertura_caminhos.md.
   Valgrind, GDB, contratos, Javadoc, Doxygen e leiame.txt presentes.
 - Revisão dirigida registrada em revisao.md. Inspeção formal por equipe e
   confronto com os checklists específicos devem ser feitos pelo aluno.
-- Slides de assertivas citados no enunciado não foram encontrados; não se
-  certifica conformidade com páginas que não foram lidas.
-- Entrega no Aprender e ZIP com matrícula/nome e .git não realizados: matrícula
-  não fornecida, envio à plataforma não solicitado. O enunciado indica 07/10/2026.
+
 
 ## Política e limites da biblioteca
 

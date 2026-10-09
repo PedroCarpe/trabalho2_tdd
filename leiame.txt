@@ -34,5 +34,4 @@ EXCLUIR é reservado: nenhuma coluna da tabela exige exclusão.
 
 A documentação do TDD fica em docs/tdd.md. Veja docs/validacao.md para
 resultados, limites e pendências acadêmicas. Artefatos ficam em build/ e não
-são versionados. Para entrega, inclua .git no ZIP e use o nome exigido pelo
-professor (matricula_primeiro_nome.zip). A matrícula não foi informada.
+são versionados.
