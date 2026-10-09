@@ -211,3 +211,18 @@ TEST_CASE("R12 - Restaurar: ausente nos dois locais: ERRO", "[backup][R12]") {
     CHECK_FALSE(fs::exists(c.hd / "A.txt"));
     CHECK_FALSE(fs::exists(c.pen / "A.txt"));
 }
+
+TEST_CASE("R13 - Restaurar: apenas pendrive: RESTAURAR", "[backup][R13]") {
+    Cenario c("r13");
+    c.Lista();
+    c.Escrever(c.pen / "A.txt", "Pen original");
+    const auto data = fs::last_write_time(c.pen / "A.txt");
+    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::RESTAURAR);
+    CHECK(fs::is_regular_file(c.hd / "A.txt"));
+    if (fs::is_regular_file(c.hd / "A.txt")) {
+        CHECK(c.Ler(c.hd / "A.txt") == "Pen original");
+    }
+    CHECK(c.Ler(c.pen / "A.txt") == "Pen original");
+    CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+}
