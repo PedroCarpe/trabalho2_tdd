@@ -64,6 +64,40 @@ Resultado processarArquivosExistentes(const fs::path& hd, const fs::path& pen,
     return salvarArquivo(pen, hd) ? Resultado::RESTAURAR : Resultado::ERRO;
 }
 
+// Processa um item; a leitura da lista e a agregação ficam no chamador.
+Resultado processarArquivo(const fs::path& origem, const fs::path& destino,
+                          Operacao operacao) {
+        if (operacao == Operacao::RESTAURAR && !arquivoExiste(destino)) {
+            return Resultado::ERRO;
+        }
+
+        if (!arquivoExiste(origem)) {
+            if (!arquivoExiste(destino)) {
+                return Resultado::ERRO;
+            }
+            if (operacao == Operacao::RESTAURAR) {
+                return salvarArquivo(destino, origem)
+                    ? Resultado::RESTAURAR : Resultado::ERRO;
+            }
+            return Resultado::NADA;
+        }
+
+        if (arquivoExiste(destino)) {
+            const auto resultado = processarArquivosExistentes(origem, destino,
+                                                               operacao);
+            if (resultado != Resultado::NADA) {
+                return resultado;
+            }
+            return Resultado::NADA;
+        }
+
+        if (!fs::exists(destino)) {
+            return salvarArquivo(origem, destino)
+                ? Resultado::SALVAR : Resultado::ERRO;
+        }
+    return Resultado::NADA;
+}
+
 }
 
 Resultado executarBackup(
@@ -85,6 +119,7 @@ Resultado executarBackup(
         return Resultado::ERRO;
     }
 
+    Resultado resultadoGlobal = Resultado::NADA;
     std::string nomeArquivo;
 
     while (std::getline(parm, nomeArquivo)) {
@@ -96,36 +131,14 @@ Resultado executarBackup(
         fs::path origem = fs::path(diretorioHd) / nomeArquivo;
         fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
 
-        if (operacao == Operacao::RESTAURAR && !arquivoExiste(destino)) {
-            return Resultado::ERRO;
-        }
-
-        if (!arquivoExiste(origem)) {
-            if (!arquivoExiste(destino)) {
-                return Resultado::ERRO;
-            }
-            if (operacao == Operacao::RESTAURAR) {
-                return salvarArquivo(destino, origem)
-                    ? Resultado::RESTAURAR : Resultado::ERRO;
-            }
-            continue;
-        }
-
-        if (arquivoExiste(destino)) {
-            const auto resultado = processarArquivosExistentes(origem, destino,
-                                                               operacao);
-            if (resultado != Resultado::NADA) {
-                return resultado;
-            }
-            continue;
-        }
-
-        if (!fs::exists(destino)) {
-            return salvarArquivo(origem, destino)
-                ? Resultado::SALVAR : Resultado::ERRO;
+        const auto resultado = processarArquivo(origem, destino, operacao);
+        if (resultado == Resultado::ERRO) {
+            resultadoGlobal = Resultado::ERRO;
+        } else if (resultadoGlobal != Resultado::ERRO &&
+                   resultado != Resultado::NADA) {
+            resultadoGlobal = resultado;
         }
     }
     
-    //Comportamento provisório para outros cenários
-    return Resultado::NADA;
+    return resultadoGlobal;
 }

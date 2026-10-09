@@ -41,3 +41,11 @@ RED: NADA em vez de RESTAURAR e arquivo não criado. GREEN: 13 casos,
 131 assertivas aprovadas. A cópia reutiliza salvarArquivo com sentido invertido.
 Nenhuma refatoração adicional necessária nesta regra; o requisito de processar
 toda a lista será tratado separadamente por um teste de regressão específico.
+
+Correção do requisito de lista completa
+Dois testes adicionais revelaram RED: a segunda cópia não ocorria em nenhum
+modo, nem se processava arquivo após um item inválido. processarArquivo agora
+retorna o resultado de cada item e executarBackup percorre toda a lista.
+Política explicitada (a tabela não define agregação): ERRO prevalece, mas os
+outros itens continuam; sem erros, retorna a ação do modo se houve alguma cópia,
+ou NADA. IMPOSSIVEL cancela antes de ler a lista. Não há rollback de cópias.
