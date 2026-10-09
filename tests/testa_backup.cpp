@@ -269,3 +269,23 @@ TEST_CASE("Copia preserva data da origem e permite repeticao", "[backup][datas]"
     CHECK(fs::last_write_time(destino / "A.txt") == data);
     CHECK(c.Executar(operacao) == Resultado::NADA);
 }
+
+TEST_CASE("Lista vazia nao altera arquivos", "[backup][lista]") {
+    Cenario c("vazia");
+    c.Lista("");
+    CHECK(c.Executar() == Resultado::NADA);
+    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::NADA);
+}
+
+TEST_CASE("Destino invalido retorna erro sem alterar origem", "[backup][io]") {
+    const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
+    Cenario c("destino_invalido");
+    c.Lista();
+    const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
+    const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
+    c.Escrever(origem / "A.txt", "original");
+    fs::create_directory(destino / "A.txt");
+    CHECK(c.Executar(operacao) == Resultado::ERRO);
+    CHECK(c.Ler(origem / "A.txt") == "original");
+    CHECK(fs::is_directory(destino / "A.txt"));
+}
