@@ -254,3 +254,18 @@ TEST_CASE("Erro em um item nao impede os demais", "[backup][lista][erro]") {
     CHECK(c.Executar() == Resultado::ERRO);
     CHECK(fs::is_regular_file(c.pen / "A.txt"));
 }
+
+TEST_CASE("Copia preserva data da origem e permite repeticao", "[backup][datas]") {
+    const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
+    Cenario c("repeticao");
+    c.Lista();
+    const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
+    const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
+    c.Escrever(origem / "A.txt", "versao");
+    c.Data(origem / "A.txt", -24);
+    const auto data = fs::last_write_time(origem / "A.txt");
+    REQUIRE(c.Executar(operacao) == (operacao == Operacao::BACKUP
+            ? Resultado::SALVAR : Resultado::RESTAURAR));
+    CHECK(fs::last_write_time(destino / "A.txt") == data);
+    CHECK(c.Executar(operacao) == Resultado::NADA);
+}
