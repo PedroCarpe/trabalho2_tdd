@@ -101,3 +101,11 @@ TEST_CASE("R3 - Atualizar A.txt mais antigo no pendrive", "[backup][R3]") {
     CHECK(resultado == Resultado::SALVAR);
     CHECK(c.Ler(c.pen / "A.txt") == "Conteudo atualizado");
 }
+
+TEST_CASE("R4 - Backup: datas iguais: NADA", "[R4]") {
+    Cenario c("r4"); c.Lista();
+    c.Escrever(c.hd / "A.txt", "HD"); c.Escrever(c.pen / "A.txt", "Pen");
+    fs::last_write_time(c.pen / "A.txt", fs::last_write_time(c.hd / "A.txt"));
+    REQUIRE(c.Executar() == Resultado::NADA);
+    REQUIRE(c.Ler(c.pen / "A.txt") == "Pen");
+}
