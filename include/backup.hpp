@@ -21,7 +21,8 @@ Resultado executarBackup(
     const std::string& caminhoParm,
     const std::string& diretorioHd,
     const std::string& diretorioPendrive,
-    Operacao operacao = Operacao::BACKUP
+    Operacao operacao = Operacao::BACKUP,
+    std::string* erro = nullptr
 );
 
 #endif

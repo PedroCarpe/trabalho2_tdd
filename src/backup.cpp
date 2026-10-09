@@ -112,8 +112,10 @@ Resultado executarBackup(
     const std::string& caminhoParm,
     const std::string& diretorioHd,
     const std::string& diretorioPendrive,
-    Operacao operacao
+    Operacao operacao,
+    std::string* erro
 ) {
+    (void)erro;
     
     //Comportamento já implementado em R1
     if(!arquivoExiste(caminhoParm)) {

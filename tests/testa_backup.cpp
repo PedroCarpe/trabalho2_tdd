@@ -55,8 +55,10 @@ struct Cenario {
                            std::chrono::hours(horas));
     }
 
-    Resultado Executar(Operacao operacao = Operacao::BACKUP) {
-        return executarBackup(parm.string(), hd.string(), pen.string(), operacao);
+    Resultado Executar(Operacao operacao = Operacao::BACKUP,
+                       std::string* erro = nullptr) {
+        return executarBackup(parm.string(), hd.string(), pen.string(), operacao,
+                              erro);
     }
 };
 }  // namespace
@@ -288,4 +290,19 @@ TEST_CASE("Destino invalido retorna erro sem alterar origem", "[backup][io]") {
     CHECK(c.Executar(operacao) == Resultado::ERRO);
     CHECK(c.Ler(origem / "A.txt") == "original");
     CHECK(fs::is_directory(destino / "A.txt"));
+}
+
+TEST_CASE("Diagnosticos explicam impossibilidade e erros por arquivo",
+          "[backup][diagnostico]") {
+    Cenario c("diagnostico");
+    std::string erro;
+    CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::IMPOSSIVEL);
+    CHECK_FALSE(erro.empty());
+    c.Lista();
+    erro.clear();
+    CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::ERRO);
+    CHECK(erro.find("A.txt") != std::string::npos);
+    c.Escrever(c.hd / "A.txt", "HD");
+    CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::SALVAR);
+    CHECK(erro.empty());
 }
