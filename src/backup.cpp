@@ -66,6 +66,11 @@ Resultado executarBackup(
         fs::path origem = fs::path(diretorioHd) / nomeArquivo;
         fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
 
+        if (arquivoExiste(origem) && arquivoExiste(destino) &&
+            arquivoMaisAntigo(origem, destino)) {
+            return Resultado::ERRO;
+        }
+
         if (arquivoExiste(origem) &&
             (!fs::exists(destino) ||
              (arquivoExiste(destino) &&
