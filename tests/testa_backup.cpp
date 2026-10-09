@@ -149,3 +149,18 @@ TEST_CASE("R7 - Restaurar: pendrive antigo: ERRO", "[backup][R7]") {
     CHECK(fs::last_write_time(c.hd / "A.txt") == dataHd);
     CHECK(fs::last_write_time(c.pen / "A.txt") == dataPen);
 }
+
+TEST_CASE("R8 - Restaurar: datas iguais: NADA", "[backup][R8]") {
+    Cenario c("r8");
+    c.Lista();
+    c.Escrever(c.hd / "A.txt", "HD");
+    c.Escrever(c.pen / "A.txt", "Pen");
+    const auto data = fs::last_write_time(c.hd / "A.txt");
+    fs::last_write_time(c.pen / "A.txt", data);
+    REQUIRE(fs::last_write_time(c.pen / "A.txt") == data);
+    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::NADA);
+    CHECK(c.Ler(c.hd / "A.txt") == "HD");
+    CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+    CHECK(fs::last_write_time(c.hd / "A.txt") == data);
+    CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+}
