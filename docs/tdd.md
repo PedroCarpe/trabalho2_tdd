@@ -35,3 +35,9 @@ R12 — teste já GREEN / avaliação REFACTOR
 12 casos e 119 assertivas passaram imediatamente. A guarda introduzida em R6
 já rejeita RESTAURAR quando o pendrive não contém o arquivo, mesmo sem HD.
 Nenhuma mudança de negócio ou extração adicional foi necessária.
+
+R13 — RED / GREEN / avaliação REFACTOR
+RED: NADA em vez de RESTAURAR e arquivo não criado. GREEN: 13 casos,
+132 assertivas aprovadas. A cópia reutiliza salvarArquivo com sentido invertido.
+Nenhuma refatoração adicional necessária nesta regra; o requisito de processar
+toda a lista será tratado separadamente por um teste de regressão específico.
