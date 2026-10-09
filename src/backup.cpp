@@ -12,9 +12,19 @@ namespace {
         return fs::is_regular_file(caminho);
     }
 
+    enum class OrdemDatas { ANTERIOR, IGUAL, POSTERIOR };
+
     // Compara as datas de modificação de dois arquivos existentes.
-    bool arquivoMaisAntigo(const fs::path& arquivo, const fs::path& referencia) {
-        return fs::last_write_time(arquivo) < fs::last_write_time(referencia);
+    OrdemDatas compararDatas(const fs::path& arquivo, const fs::path& referencia) {
+        const auto dataArquivo = fs::last_write_time(arquivo);
+        const auto dataReferencia = fs::last_write_time(referencia);
+        if (dataArquivo < dataReferencia) {
+            return OrdemDatas::ANTERIOR;
+        }
+        if (dataArquivo > dataReferencia) {
+            return OrdemDatas::POSTERIOR;
+        }
+        return OrdemDatas::IGUAL;
     }
 
     // Copia um arquivo da origem para o destino.
@@ -66,15 +76,20 @@ Resultado executarBackup(
         fs::path origem = fs::path(diretorioHd) / nomeArquivo;
         fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
 
-        if (arquivoExiste(origem) && arquivoExiste(destino) &&
-            arquivoMaisAntigo(origem, destino)) {
-            return Resultado::ERRO;
+        if (!arquivoExiste(origem)) {
+            continue;
         }
 
-        if (arquivoExiste(origem) &&
-            (!fs::exists(destino) ||
-             (arquivoExiste(destino) &&
-              arquivoMaisAntigo(destino, origem)))) {
+        bool deveSalvar = !fs::exists(destino);
+        if (!deveSalvar && arquivoExiste(destino)) {
+            const auto ordem = compararDatas(destino, origem);
+            if (ordem == OrdemDatas::POSTERIOR) {
+                return Resultado::ERRO;
+            }
+            deveSalvar = ordem == OrdemDatas::ANTERIOR;
+        }
+
+        if (deveSalvar) {
 
             if (!salvarArquivo(origem, destino)) {
                 return Resultado::ERRO;
