@@ -24,3 +24,8 @@ R10 — RED / GREEN / avaliação REFACTOR
 RED retornou NADA em vez de ERRO; arquivos permaneceram ausentes.
 GREEN: 10 casos, 102 assertivas aprovadas. A verificação de existência já
 usa o auxiliar comum; nenhuma refatoração adicional foi necessária.
+
+R11 — teste já GREEN / avaliação REFACTOR
+11 casos e 112 assertivas passaram imediatamente. O arquivo apenas no
+pendrive é preservado, sem criar arquivo no HD. A tabela não manda excluir.
+Não houve implementação nem refatoração artificiais.
