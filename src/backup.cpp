@@ -103,7 +103,7 @@ Resultado processarArquivo(const fs::path& origem, const fs::path& destino,
             return salvarArquivo(origem, destino)
                 ? Resultado::SALVAR : Resultado::ERRO;
         }
-    return Resultado::NADA;
+    return Resultado::ERRO;
 }
 
 }
