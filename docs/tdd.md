@@ -2,6 +2,7 @@ R6 — REFACTOR
 A implementação foi revisada e não foram identificadas
 melhorias estruturais necessárias nesta etapa.
 Os testes R1–R6 permanecem aprovados.
+
 R7 — RED / GREEN / avaliação REFACTOR
 O teste distinguiu os modos: RESTAURAR retornava SALVAR, alterava o conteúdo
  e a data do pendrive. GREEN passou com 7 casos e 68 assertivas.
@@ -29,3 +30,8 @@ R11 — teste já GREEN / avaliação REFACTOR
 11 casos e 112 assertivas passaram imediatamente. O arquivo apenas no
 pendrive é preservado, sem criar arquivo no HD. A tabela não manda excluir.
 Não houve implementação nem refatoração artificiais.
+
+R12 — teste já GREEN / avaliação REFACTOR
+12 casos e 119 assertivas passaram imediatamente. A guarda introduzida em R6
+já rejeita RESTAURAR quando o pendrive não contém o arquivo, mesmo sem HD.
+Nenhuma mudança de negócio ou extração adicional foi necessária.
