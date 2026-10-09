@@ -132,3 +132,20 @@ TEST_CASE("R6 - Restaurar: apenas HD: ERRO", "[R6]") {
     REQUIRE(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
     REQUIRE(c.Ler(c.hd / "A.txt") == "HD");
 }
+
+TEST_CASE("R7 - Restaurar: pendrive antigo: ERRO", "[backup][R7]") {
+    Cenario c("r7");
+    c.Lista();
+    c.Escrever(c.hd / "A.txt", "HD recente");
+    c.Escrever(c.pen / "A.txt", "Pen antigo");
+    c.Data(c.hd / "A.txt", 0);
+    c.Data(c.pen / "A.txt", -24);
+    const auto dataHd = fs::last_write_time(c.hd / "A.txt");
+    const auto dataPen = fs::last_write_time(c.pen / "A.txt");
+    REQUIRE(dataPen < dataHd);
+    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
+    CHECK(c.Ler(c.hd / "A.txt") == "HD recente");
+    CHECK(c.Ler(c.pen / "A.txt") == "Pen antigo");
+    CHECK(fs::last_write_time(c.hd / "A.txt") == dataHd);
+    CHECK(fs::last_write_time(c.pen / "A.txt") == dataPen);
+}
