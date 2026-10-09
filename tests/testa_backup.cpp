@@ -201,3 +201,13 @@ TEST_CASE("R11 - Backup: apenas pendrive: NADA", "[backup][R11]") {
     CHECK(c.Ler(c.pen / "A.txt") == "Pen");
     CHECK(fs::last_write_time(c.pen / "A.txt") == data);
 }
+
+TEST_CASE("R12 - Restaurar: ausente nos dois locais: ERRO", "[backup][R12]") {
+    Cenario c("r12");
+    c.Lista();
+    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+    REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
+    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
+    CHECK_FALSE(fs::exists(c.hd / "A.txt"));
+    CHECK_FALSE(fs::exists(c.pen / "A.txt"));
+}
