@@ -50,8 +50,11 @@ bool salvarArquivo(
 Resultado executarBackup(
     const std::string& caminhoParm,
     const std::string& diretorioHd,
-    const std::string& diretorioPendrive
+    const std::string& diretorioPendrive,
+    Operacao operacao
 ) {
+    // Fase RED de R6: ambos os modos ainda seguem a lógica de backup.
+    (void)operacao;
     
     //Comportamento já implementado em R1
     if(!arquivoExiste(caminhoParm)) {

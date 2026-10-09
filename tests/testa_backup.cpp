@@ -54,8 +54,8 @@ struct Cenario {
                            std::chrono::hours(horas));
     }
 
-    Resultado Executar() {
-        return executarBackup(parm.string(), hd.string(), pen.string());
+    Resultado Executar(Operacao operacao = Operacao::BACKUP) {
+        return executarBackup(parm.string(), hd.string(), pen.string(), operacao);
     }
 };
 }  // namespace
@@ -125,4 +125,10 @@ TEST_CASE("R5 - Backup: pendrive recente: ERRO", "[R5]") {
 
     CHECK(c.Executar() == Resultado::ERRO);
     CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+}
+
+TEST_CASE("R6 - Restaurar: apenas HD: ERRO", "[R6]") {
+    Cenario c("r6"); c.Lista(); c.Escrever(c.hd / "A.txt", "HD");
+    REQUIRE(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
+    REQUIRE(c.Ler(c.hd / "A.txt") == "HD");
 }
