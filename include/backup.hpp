@@ -8,7 +8,9 @@
 /** @brief Sentido solicitado para a sincronização. */
 enum class Operacao { BACKUP, RESTAURAR };
 
-/** @brief Ação realizada ou falha. EXCLUIR é reservado e não usado pela tabela. */
+/**
+ * @brief Ação realizada ou falha. EXCLUIR é reservado e não usado pela tabela.
+ */
 enum class Resultado { SALVAR, RESTAURAR, EXCLUIR, NADA, ERRO, IMPOSSIVEL };
 
 /**
