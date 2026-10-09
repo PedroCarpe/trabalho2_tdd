@@ -104,6 +104,10 @@ Resultado executarBackup(
             if (!arquivoExiste(destino)) {
                 return Resultado::ERRO;
             }
+            if (operacao == Operacao::RESTAURAR) {
+                return salvarArquivo(destino, origem)
+                    ? Resultado::RESTAURAR : Resultado::ERRO;
+            }
             continue;
         }
 
