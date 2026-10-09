@@ -1,6 +1,4 @@
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/generators/catch_generators.hpp>
-
+/** @file @brief Testes caixa fechada R1–R13 e regressões de I/O e lista. */
 #include <chrono>
 #include <filesystem>
 #include <fstream>
@@ -8,301 +6,319 @@
 #include <string>
 #include <system_error>
 
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
+
 #include "backup.hpp"
 
 namespace fs = std::filesystem;
 
 namespace {
+/** @brief Fixture RAII; temporários ficam em build/test_data. */
 struct Cenario {
-    fs::path base;
-    fs::path hd;
-    fs::path pen;
-    fs::path parm;
+  fs::path base;
+  fs::path hd;
+  fs::path pen;
+  fs::path parm;
 
-    explicit Cenario(const std::string& nome)
-        : base(fs::temp_directory_path() / ("backup_tdd_" + nome)),
-          hd(base / "hd"), pen(base / "pendrive"), parm(base / "Backup.parm") {
-        fs::remove_all(base);
-        fs::create_directories(hd);
-        fs::create_directories(pen);
-    }
+  /** @brief Cria diretórios vazios para um identificador de teste único. */
+  explicit Cenario(const std::string& nome)
+      : base(fs::path("build/test_data") / ("backup_tdd_" + nome)),
+        hd(base / "hd"),
+        pen(base / "pendrive"),
+        parm(base / "Backup.parm") {
+    fs::remove_all(base);
+    fs::create_directories(hd);
+    fs::create_directories(pen);
+  }
 
-    ~Cenario() {
-        std::error_code ec;
-        fs::remove_all(base, ec);
-    }
+  /** @brief Limpa o cenário inclusive após falhas, sem lançar exceções. */
+  ~Cenario() {
+    std::error_code ec;
+    fs::remove_all(base, ec);
+  }
 
-    void Lista(const std::string& nomes = "A.txt\n") {
-        Escrever(parm, nomes);
-    }
+  /** @brief Escreve a lista; padrão contém somente A.txt. */
+  void Lista(const std::string& nomes = "A.txt\n") { Escrever(parm, nomes); }
 
-    static void Escrever(const fs::path& arquivo, const std::string& texto) {
-        std::ofstream saida(arquivo, std::ios::binary);
-        REQUIRE(static_cast<bool>(saida));
-        saida << texto;
-        REQUIRE(static_cast<bool>(saida));
-    }
+  /** @brief Grava bytes e verifica abertura e escrita. */
+  static void Escrever(const fs::path& arquivo, const std::string& texto) {
+    std::ofstream saida(arquivo, std::ios::binary);
+    REQUIRE(static_cast<bool>(saida));
+    saida << texto;
+    REQUIRE(static_cast<bool>(saida));
+  }
 
-    static std::string Ler(const fs::path& arquivo) {
-        std::ifstream entrada(arquivo, std::ios::binary);
-        REQUIRE(static_cast<bool>(entrada));
-        return std::string(std::istreambuf_iterator<char>(entrada),
-                           std::istreambuf_iterator<char>());
-    }
+  /** @brief Lê todo o conteúdo de um arquivo existente. */
+  static std::string Ler(const fs::path& arquivo) {
+    std::ifstream entrada(arquivo, std::ios::binary);
+    REQUIRE(static_cast<bool>(entrada));
+    return std::string(std::istreambuf_iterator<char>(entrada),
+                       std::istreambuf_iterator<char>());
+  }
 
-    static void Data(const fs::path& arquivo, int horas) {
-        fs::last_write_time(arquivo, fs::file_time_type::clock::now() +
-                           std::chrono::hours(horas));
-    }
+  /** @brief Define data relativa ao relógio, sem sleeps. */
+  static void Data(const fs::path& arquivo, int horas) {
+    fs::last_write_time(
+        arquivo, fs::file_time_type::clock::now() + std::chrono::hours(horas));
+  }
 
-    Resultado Executar(Operacao operacao = Operacao::BACKUP,
-                       std::string* erro = nullptr) {
-        return executarBackup(parm.string(), hd.string(), pen.string(), operacao,
-                              erro);
-    }
+  /** @brief Encaminha operação e diagnóstico para a biblioteca. */
+  Resultado Executar(Operacao operacao = Operacao::BACKUP,
+                     std::string* erro = nullptr) {
+    return executarBackup(parm.string(), hd.string(), pen.string(), operacao,
+                          erro);
+  }
 };
 }  // namespace
 
 TEST_CASE("R1 - Backup.parm nao existe", "[backup][R1]") {
-    Cenario c("r1");
+  Cenario c("r1");
 
-    REQUIRE_FALSE(fs::exists(c.parm));
-    REQUIRE(c.Executar() == Resultado::IMPOSSIVEL);
+  REQUIRE_FALSE(fs::exists(c.parm));
+  REQUIRE(c.Executar() == Resultado::IMPOSSIVEL);
 }
 
 TEST_CASE("R2 - Salvar A.txt no pendrive", "[backup][R2]") {
-    Cenario c("r2");
-    c.Lista();
-    c.Escrever(c.hd / "A.txt", "Conteudo original");
+  Cenario c("r2");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "Conteudo original");
 
-    REQUIRE(fs::exists(c.parm));
-    REQUIRE(fs::exists(c.hd / "A.txt"));
-    REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
+  REQUIRE(fs::exists(c.parm));
+  REQUIRE(fs::exists(c.hd / "A.txt"));
+  REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
 
-    REQUIRE(c.Executar() == Resultado::SALVAR);
-    REQUIRE(fs::exists(c.pen / "A.txt"));
-    REQUIRE(c.Ler(c.pen / "A.txt") == "Conteudo original");
+  REQUIRE(c.Executar() == Resultado::SALVAR);
+  REQUIRE(fs::exists(c.pen / "A.txt"));
+  REQUIRE(c.Ler(c.pen / "A.txt") == "Conteudo original");
 }
 
 TEST_CASE("R3 - Atualizar A.txt mais antigo no pendrive", "[backup][R3]") {
-    Cenario c("r3");
-    c.Lista();
-    c.Escrever(c.hd / "A.txt", "Conteudo atualizado");
-    c.Escrever(c.pen / "A.txt", "Conteudo antigo");
-    c.Data(c.hd / "A.txt", 0);
-    c.Data(c.pen / "A.txt", -24);
+  Cenario c("r3");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "Conteudo atualizado");
+  c.Escrever(c.pen / "A.txt", "Conteudo antigo");
+  c.Data(c.hd / "A.txt", 0);
+  c.Data(c.pen / "A.txt", -24);
 
-    REQUIRE(fs::is_regular_file(c.parm));
-    REQUIRE(fs::is_regular_file(c.hd / "A.txt"));
-    REQUIRE(fs::is_regular_file(c.pen / "A.txt"));
-    REQUIRE(fs::last_write_time(c.pen / "A.txt") <
-            fs::last_write_time(c.hd / "A.txt"));
+  REQUIRE(fs::is_regular_file(c.parm));
+  REQUIRE(fs::is_regular_file(c.hd / "A.txt"));
+  REQUIRE(fs::is_regular_file(c.pen / "A.txt"));
+  REQUIRE(fs::last_write_time(c.pen / "A.txt") <
+          fs::last_write_time(c.hd / "A.txt"));
 
-    const Resultado resultado = c.Executar();
+  const Resultado resultado = c.Executar();
 
-    // CHECK permite observar ambas as falhas esperadas da fase RED.
-    CHECK(resultado == Resultado::SALVAR);
-    CHECK(c.Ler(c.pen / "A.txt") == "Conteudo atualizado");
+  // CHECK verifica resultado e conteúdo independentemente.
+  CHECK(resultado == Resultado::SALVAR);
+  CHECK(c.Ler(c.pen / "A.txt") == "Conteudo atualizado");
 }
 
-TEST_CASE("R4 - Backup: datas iguais: NADA", "[R4]") {
-    Cenario c("r4"); c.Lista();
-    c.Escrever(c.hd / "A.txt", "HD"); c.Escrever(c.pen / "A.txt", "Pen");
-    fs::last_write_time(c.pen / "A.txt", fs::last_write_time(c.hd / "A.txt"));
-    REQUIRE(c.Executar() == Resultado::NADA);
-    REQUIRE(c.Ler(c.pen / "A.txt") == "Pen");
+TEST_CASE("R4 - Backup: datas iguais: NADA", "[backup][R4]") {
+  Cenario c("r4");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "HD");
+  c.Escrever(c.pen / "A.txt", "Pen");
+  fs::last_write_time(c.pen / "A.txt", fs::last_write_time(c.hd / "A.txt"));
+  REQUIRE(c.Executar() == Resultado::NADA);
+  REQUIRE(c.Ler(c.pen / "A.txt") == "Pen");
 }
 
-TEST_CASE("R5 - Backup: pendrive recente: ERRO", "[R5]") {
-    Cenario c("r5");
-    c.Lista();
-    c.Escrever(c.hd / "A.txt", "HD");
-    c.Escrever(c.pen / "A.txt", "Pen");
-    c.Data(c.hd / "A.txt", -2);
-    c.Data(c.pen / "A.txt", 2);
+TEST_CASE("R5 - Backup: pendrive recente: ERRO", "[backup][R5]") {
+  Cenario c("r5");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "HD");
+  c.Escrever(c.pen / "A.txt", "Pen");
+  c.Data(c.hd / "A.txt", -2);
+  c.Data(c.pen / "A.txt", 2);
 
-    REQUIRE(fs::is_regular_file(c.hd / "A.txt"));
-    REQUIRE(fs::is_regular_file(c.pen / "A.txt"));
-    REQUIRE(fs::last_write_time(c.pen / "A.txt") >
-            fs::last_write_time(c.hd / "A.txt"));
+  REQUIRE(fs::is_regular_file(c.hd / "A.txt"));
+  REQUIRE(fs::is_regular_file(c.pen / "A.txt"));
+  REQUIRE(fs::last_write_time(c.pen / "A.txt") >
+          fs::last_write_time(c.hd / "A.txt"));
 
-    CHECK(c.Executar() == Resultado::ERRO);
-    CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+  CHECK(c.Executar() == Resultado::ERRO);
+  CHECK(c.Ler(c.pen / "A.txt") == "Pen");
 }
 
-TEST_CASE("R6 - Restaurar: apenas HD: ERRO", "[R6]") {
-    Cenario c("r6"); c.Lista(); c.Escrever(c.hd / "A.txt", "HD");
-    REQUIRE(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
-    REQUIRE(c.Ler(c.hd / "A.txt") == "HD");
+TEST_CASE("R6 - Restaurar: apenas HD: ERRO", "[backup][R6]") {
+  Cenario c("r6");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "HD");
+  REQUIRE(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
+  REQUIRE(c.Ler(c.hd / "A.txt") == "HD");
 }
 
 TEST_CASE("R7 - Restaurar: pendrive antigo: ERRO", "[backup][R7]") {
-    Cenario c("r7");
-    c.Lista();
-    c.Escrever(c.hd / "A.txt", "HD recente");
-    c.Escrever(c.pen / "A.txt", "Pen antigo");
-    c.Data(c.hd / "A.txt", 0);
-    c.Data(c.pen / "A.txt", -24);
-    const auto dataHd = fs::last_write_time(c.hd / "A.txt");
-    const auto dataPen = fs::last_write_time(c.pen / "A.txt");
-    REQUIRE(dataPen < dataHd);
-    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
-    CHECK(c.Ler(c.hd / "A.txt") == "HD recente");
-    CHECK(c.Ler(c.pen / "A.txt") == "Pen antigo");
-    CHECK(fs::last_write_time(c.hd / "A.txt") == dataHd);
-    CHECK(fs::last_write_time(c.pen / "A.txt") == dataPen);
+  Cenario c("r7");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "HD recente");
+  c.Escrever(c.pen / "A.txt", "Pen antigo");
+  c.Data(c.hd / "A.txt", 0);
+  c.Data(c.pen / "A.txt", -24);
+  const auto dataHd = fs::last_write_time(c.hd / "A.txt");
+  const auto dataPen = fs::last_write_time(c.pen / "A.txt");
+  REQUIRE(dataPen < dataHd);
+  CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
+  CHECK(c.Ler(c.hd / "A.txt") == "HD recente");
+  CHECK(c.Ler(c.pen / "A.txt") == "Pen antigo");
+  CHECK(fs::last_write_time(c.hd / "A.txt") == dataHd);
+  CHECK(fs::last_write_time(c.pen / "A.txt") == dataPen);
 }
 
 TEST_CASE("R8 - Restaurar: datas iguais: NADA", "[backup][R8]") {
-    Cenario c("r8");
-    c.Lista();
-    c.Escrever(c.hd / "A.txt", "HD");
-    c.Escrever(c.pen / "A.txt", "Pen");
-    const auto data = fs::last_write_time(c.hd / "A.txt");
-    fs::last_write_time(c.pen / "A.txt", data);
-    REQUIRE(fs::last_write_time(c.pen / "A.txt") == data);
-    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::NADA);
-    CHECK(c.Ler(c.hd / "A.txt") == "HD");
-    CHECK(c.Ler(c.pen / "A.txt") == "Pen");
-    CHECK(fs::last_write_time(c.hd / "A.txt") == data);
-    CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+  Cenario c("r8");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "HD");
+  c.Escrever(c.pen / "A.txt", "Pen");
+  const auto data = fs::last_write_time(c.hd / "A.txt");
+  fs::last_write_time(c.pen / "A.txt", data);
+  REQUIRE(fs::last_write_time(c.pen / "A.txt") == data);
+  CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::NADA);
+  CHECK(c.Ler(c.hd / "A.txt") == "HD");
+  CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+  CHECK(fs::last_write_time(c.hd / "A.txt") == data);
+  CHECK(fs::last_write_time(c.pen / "A.txt") == data);
 }
 
 TEST_CASE("R9 - Restaurar: pendrive recente: RESTAURAR", "[backup][R9]") {
-    Cenario c("r9");
-    c.Lista();
-    c.Escrever(c.hd / "A.txt", "HD antigo");
-    c.Escrever(c.pen / "A.txt", "Pen recente");
-    c.Data(c.hd / "A.txt", -24);
-    c.Data(c.pen / "A.txt", 0);
-    const auto dataPen = fs::last_write_time(c.pen / "A.txt");
-    REQUIRE(dataPen > fs::last_write_time(c.hd / "A.txt"));
-    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::RESTAURAR);
-    CHECK(c.Ler(c.hd / "A.txt") == "Pen recente");
-    CHECK(c.Ler(c.pen / "A.txt") == "Pen recente");
-    CHECK(fs::last_write_time(c.pen / "A.txt") == dataPen);
+  Cenario c("r9");
+  c.Lista();
+  c.Escrever(c.hd / "A.txt", "HD antigo");
+  c.Escrever(c.pen / "A.txt", "Pen recente");
+  c.Data(c.hd / "A.txt", -24);
+  c.Data(c.pen / "A.txt", 0);
+  const auto dataPen = fs::last_write_time(c.pen / "A.txt");
+  REQUIRE(dataPen > fs::last_write_time(c.hd / "A.txt"));
+  CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::RESTAURAR);
+  CHECK(c.Ler(c.hd / "A.txt") == "Pen recente");
+  CHECK(c.Ler(c.pen / "A.txt") == "Pen recente");
+  CHECK(fs::last_write_time(c.pen / "A.txt") == dataPen);
 }
 
 TEST_CASE("R10 - Backup: ausente nos dois locais: ERRO", "[backup][R10]") {
-    Cenario c("r10");
-    c.Lista();
-    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
-    REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
-    CHECK(c.Executar() == Resultado::ERRO);
-    CHECK_FALSE(fs::exists(c.hd / "A.txt"));
-    CHECK_FALSE(fs::exists(c.pen / "A.txt"));
+  Cenario c("r10");
+  c.Lista();
+  REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+  REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
+  CHECK(c.Executar() == Resultado::ERRO);
+  CHECK_FALSE(fs::exists(c.hd / "A.txt"));
+  CHECK_FALSE(fs::exists(c.pen / "A.txt"));
 }
 
 TEST_CASE("R11 - Backup: apenas pendrive: NADA", "[backup][R11]") {
-    Cenario c("r11");
-    c.Lista();
-    c.Escrever(c.pen / "A.txt", "Pen");
-    const auto data = fs::last_write_time(c.pen / "A.txt");
-    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
-    CHECK(c.Executar() == Resultado::NADA);
-    CHECK_FALSE(fs::exists(c.hd / "A.txt"));
-    CHECK(c.Ler(c.pen / "A.txt") == "Pen");
-    CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+  Cenario c("r11");
+  c.Lista();
+  c.Escrever(c.pen / "A.txt", "Pen");
+  const auto data = fs::last_write_time(c.pen / "A.txt");
+  REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+  CHECK(c.Executar() == Resultado::NADA);
+  CHECK_FALSE(fs::exists(c.hd / "A.txt"));
+  CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+  CHECK(fs::last_write_time(c.pen / "A.txt") == data);
 }
 
 TEST_CASE("R12 - Restaurar: ausente nos dois locais: ERRO", "[backup][R12]") {
-    Cenario c("r12");
-    c.Lista();
-    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
-    REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
-    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
-    CHECK_FALSE(fs::exists(c.hd / "A.txt"));
-    CHECK_FALSE(fs::exists(c.pen / "A.txt"));
+  Cenario c("r12");
+  c.Lista();
+  REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+  REQUIRE_FALSE(fs::exists(c.pen / "A.txt"));
+  CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::ERRO);
+  CHECK_FALSE(fs::exists(c.hd / "A.txt"));
+  CHECK_FALSE(fs::exists(c.pen / "A.txt"));
 }
 
 TEST_CASE("R13 - Restaurar: apenas pendrive: RESTAURAR", "[backup][R13]") {
-    Cenario c("r13");
-    c.Lista();
-    c.Escrever(c.pen / "A.txt", "Pen original");
-    const auto data = fs::last_write_time(c.pen / "A.txt");
-    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
-    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::RESTAURAR);
-    CHECK(fs::is_regular_file(c.hd / "A.txt"));
-    if (fs::is_regular_file(c.hd / "A.txt")) {
-        CHECK(c.Ler(c.hd / "A.txt") == "Pen original");
-    }
-    CHECK(c.Ler(c.pen / "A.txt") == "Pen original");
-    CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+  Cenario c("r13");
+  c.Lista();
+  c.Escrever(c.pen / "A.txt", "Pen original");
+  const auto data = fs::last_write_time(c.pen / "A.txt");
+  REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+  CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::RESTAURAR);
+  CHECK(fs::is_regular_file(c.hd / "A.txt"));
+  if (fs::is_regular_file(c.hd / "A.txt")) {
+    CHECK(c.Ler(c.hd / "A.txt") == "Pen original");
+  }
+  CHECK(c.Ler(c.pen / "A.txt") == "Pen original");
+  CHECK(fs::last_write_time(c.pen / "A.txt") == data);
 }
 
 TEST_CASE("Processa toda a lista em backup e restauracao", "[backup][lista]") {
-    const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
-    Cenario c("lista");
-    c.Lista("\nA.txt\nB.txt\n");
-    const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
-    const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
-    c.Escrever(origem / "A.txt", "A");
-    c.Escrever(origem / "B.txt", "B");
-    c.Escrever(origem / "fora.txt", "nao listado");
-    CHECK(c.Executar(operacao) == (operacao == Operacao::BACKUP
-          ? Resultado::SALVAR : Resultado::RESTAURAR));
-    CHECK(fs::is_regular_file(destino / "A.txt"));
-    CHECK(fs::is_regular_file(destino / "B.txt"));
-    if (fs::is_regular_file(destino / "B.txt")) {
-        CHECK(c.Ler(destino / "B.txt") == "B");
-    }
-    CHECK_FALSE(fs::exists(destino / "fora.txt"));
+  const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
+  Cenario c("lista");
+  c.Lista("\nA.txt\nB.txt\n");
+  const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
+  const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
+  c.Escrever(origem / "A.txt", "A");
+  c.Escrever(origem / "B.txt", "B");
+  c.Escrever(origem / "fora.txt", "nao listado");
+  CHECK(c.Executar(operacao) == (operacao == Operacao::BACKUP
+                                     ? Resultado::SALVAR
+                                     : Resultado::RESTAURAR));
+  CHECK(fs::is_regular_file(destino / "A.txt"));
+  CHECK(fs::is_regular_file(destino / "B.txt"));
+  if (fs::is_regular_file(destino / "B.txt")) {
+    CHECK(c.Ler(destino / "B.txt") == "B");
+  }
+  CHECK_FALSE(fs::exists(destino / "fora.txt"));
 }
 
 TEST_CASE("Erro em um item nao impede os demais", "[backup][lista][erro]") {
-    Cenario c("lista_erro");
-    c.Lista("ausente.txt\nA.txt\n");
-    c.Escrever(c.hd / "A.txt", "A");
-    CHECK(c.Executar() == Resultado::ERRO);
-    CHECK(fs::is_regular_file(c.pen / "A.txt"));
+  Cenario c("lista_erro");
+  c.Lista("ausente.txt\nA.txt\n");
+  c.Escrever(c.hd / "A.txt", "A");
+  CHECK(c.Executar() == Resultado::ERRO);
+  CHECK(fs::is_regular_file(c.pen / "A.txt"));
 }
 
-TEST_CASE("Copia preserva data da origem e permite repeticao", "[backup][datas]") {
-    const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
-    Cenario c("repeticao");
-    c.Lista();
-    const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
-    const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
-    c.Escrever(origem / "A.txt", "versao");
-    c.Data(origem / "A.txt", -24);
-    const auto data = fs::last_write_time(origem / "A.txt");
-    REQUIRE(c.Executar(operacao) == (operacao == Operacao::BACKUP
-            ? Resultado::SALVAR : Resultado::RESTAURAR));
-    CHECK(fs::last_write_time(destino / "A.txt") == data);
-    CHECK(c.Executar(operacao) == Resultado::NADA);
+TEST_CASE("Copia preserva data da origem e permite repeticao",
+          "[backup][datas]") {
+  const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
+  Cenario c("repeticao");
+  c.Lista();
+  const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
+  const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
+  c.Escrever(origem / "A.txt", "versao");
+  c.Data(origem / "A.txt", -24);
+  const auto data = fs::last_write_time(origem / "A.txt");
+  REQUIRE(c.Executar(operacao) == (operacao == Operacao::BACKUP
+                                       ? Resultado::SALVAR
+                                       : Resultado::RESTAURAR));
+  CHECK(fs::last_write_time(destino / "A.txt") == data);
+  CHECK(c.Executar(operacao) == Resultado::NADA);
 }
 
 TEST_CASE("Lista vazia nao altera arquivos", "[backup][lista]") {
-    Cenario c("vazia");
-    c.Lista("");
-    CHECK(c.Executar() == Resultado::NADA);
-    CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::NADA);
+  Cenario c("vazia");
+  c.Lista("");
+  CHECK(c.Executar() == Resultado::NADA);
+  CHECK(c.Executar(Operacao::RESTAURAR) == Resultado::NADA);
 }
 
 TEST_CASE("Destino invalido retorna erro sem alterar origem", "[backup][io]") {
-    const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
-    Cenario c("destino_invalido");
-    c.Lista();
-    const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
-    const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
-    c.Escrever(origem / "A.txt", "original");
-    fs::create_directory(destino / "A.txt");
-    CHECK(c.Executar(operacao) == Resultado::ERRO);
-    CHECK(c.Ler(origem / "A.txt") == "original");
-    CHECK(fs::is_directory(destino / "A.txt"));
+  const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
+  Cenario c("destino_invalido");
+  c.Lista();
+  const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
+  const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
+  c.Escrever(origem / "A.txt", "original");
+  fs::create_directory(destino / "A.txt");
+  CHECK(c.Executar(operacao) == Resultado::ERRO);
+  CHECK(c.Ler(origem / "A.txt") == "original");
+  CHECK(fs::is_directory(destino / "A.txt"));
 }
 
 TEST_CASE("Diagnosticos explicam impossibilidade e erros por arquivo",
           "[backup][diagnostico]") {
-    Cenario c("diagnostico");
-    std::string erro;
-    CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::IMPOSSIVEL);
-    CHECK_FALSE(erro.empty());
-    c.Lista();
-    erro.clear();
-    CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::ERRO);
-    CHECK(erro.find("A.txt") != std::string::npos);
-    c.Escrever(c.hd / "A.txt", "HD");
-    CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::SALVAR);
-    CHECK(erro.empty());
+  Cenario c("diagnostico");
+  std::string erro;
+  CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::IMPOSSIVEL);
+  CHECK_FALSE(erro.empty());
+  c.Lista();
+  erro.clear();
+  CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::ERRO);
+  CHECK(erro.find("A.txt") != std::string::npos);
+  c.Escrever(c.hd / "A.txt", "HD");
+  CHECK(c.Executar(Operacao::BACKUP, &erro) == Resultado::SALVAR);
+  CHECK(erro.empty());
 }
