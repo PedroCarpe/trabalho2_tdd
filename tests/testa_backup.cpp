@@ -109,3 +109,20 @@ TEST_CASE("R4 - Backup: datas iguais: NADA", "[R4]") {
     REQUIRE(c.Executar() == Resultado::NADA);
     REQUIRE(c.Ler(c.pen / "A.txt") == "Pen");
 }
+
+TEST_CASE("R5 - Backup: pendrive recente: ERRO", "[R5]") {
+    Cenario c("r5");
+    c.Lista();
+    c.Escrever(c.hd / "A.txt", "HD");
+    c.Escrever(c.pen / "A.txt", "Pen");
+    c.Data(c.hd / "A.txt", -2);
+    c.Data(c.pen / "A.txt", 2);
+
+    REQUIRE(fs::is_regular_file(c.hd / "A.txt"));
+    REQUIRE(fs::is_regular_file(c.pen / "A.txt"));
+    REQUIRE(fs::last_write_time(c.pen / "A.txt") >
+            fs::last_write_time(c.hd / "A.txt"));
+
+    CHECK(c.Executar() == Resultado::ERRO);
+    CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+}
