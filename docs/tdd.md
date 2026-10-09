@@ -13,3 +13,9 @@ O teste passou imediatamente: 8 casos, 82 assertivas. Datas iguais já não
 provocavam cópia, inclusive em RESTAURAR. Verificadas as duas datas e conteúdos.
 Não foi fabricado RED nem alteração de implementação. O comparador centralizado
 já representa igualdade, portanto nenhuma refatoração adicional é necessária.
+
+R9 — RED / GREEN / REFACTOR
+RED: 9 casos, somente R9 falhou (ERRO e conteúdo antigo no HD).
+GREEN: 9 casos e 95 assertivas aprovadas. A cópia inverte origem e destino.
+REFACTOR: processarArquivosExistentes separa decisão por operação da leitura
+ da lista, compartilhando comparação e cópia. Regressão: 9/95 aprovados.

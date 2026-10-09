@@ -45,6 +45,25 @@ bool salvarArquivo(
     return copiado && !erro;
 }
 
+// Decide e executa a ação quando os dois arquivos existem.
+Resultado processarArquivosExistentes(const fs::path& hd, const fs::path& pen,
+                                     Operacao operacao) {
+    const auto ordem = compararDatas(pen, hd);
+    if (ordem == OrdemDatas::IGUAL) {
+        return Resultado::NADA;
+    }
+    if (operacao == Operacao::BACKUP) {
+        if (ordem == OrdemDatas::POSTERIOR) {
+            return Resultado::ERRO;
+        }
+        return salvarArquivo(hd, pen) ? Resultado::SALVAR : Resultado::ERRO;
+    }
+    if (ordem == OrdemDatas::ANTERIOR) {
+        return Resultado::ERRO;
+    }
+    return salvarArquivo(pen, hd) ? Resultado::RESTAURAR : Resultado::ERRO;
+}
+
 }
 
 Resultado executarBackup(
@@ -85,32 +104,18 @@ Resultado executarBackup(
             continue;
         }
 
-        bool deveSalvar = !fs::exists(destino);
-        if (!deveSalvar && arquivoExiste(destino)) {
-            const auto ordem = compararDatas(destino, origem);
-            if (operacao == Operacao::RESTAURAR &&
-                ordem == OrdemDatas::ANTERIOR) {
-                return Resultado::ERRO;
+        if (arquivoExiste(destino)) {
+            const auto resultado = processarArquivosExistentes(origem, destino,
+                                                               operacao);
+            if (resultado != Resultado::NADA) {
+                return resultado;
             }
-            if (ordem == OrdemDatas::POSTERIOR) {
-                if (operacao == Operacao::RESTAURAR) {
-                    if (!salvarArquivo(destino, origem)) {
-                        return Resultado::ERRO;
-                    }
-                    return Resultado::RESTAURAR;
-                }
-                return Resultado::ERRO;
-            }
-            deveSalvar = ordem == OrdemDatas::ANTERIOR;
+            continue;
         }
 
-        if (deveSalvar) {
-
-            if (!salvarArquivo(origem, destino)) {
-                return Resultado::ERRO;
-            }
-
-            return Resultado::SALVAR;
+        if (!fs::exists(destino)) {
+            return salvarArquivo(origem, destino)
+                ? Resultado::SALVAR : Resultado::ERRO;
         }
     }
     
