@@ -189,3 +189,15 @@ TEST_CASE("R10 - Backup: ausente nos dois locais: ERRO", "[backup][R10]") {
     CHECK_FALSE(fs::exists(c.hd / "A.txt"));
     CHECK_FALSE(fs::exists(c.pen / "A.txt"));
 }
+
+TEST_CASE("R11 - Backup: apenas pendrive: NADA", "[backup][R11]") {
+    Cenario c("r11");
+    c.Lista();
+    c.Escrever(c.pen / "A.txt", "Pen");
+    const auto data = fs::last_write_time(c.pen / "A.txt");
+    REQUIRE_FALSE(fs::exists(c.hd / "A.txt"));
+    CHECK(c.Executar() == Resultado::NADA);
+    CHECK_FALSE(fs::exists(c.hd / "A.txt"));
+    CHECK(c.Ler(c.pen / "A.txt") == "Pen");
+    CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+}
