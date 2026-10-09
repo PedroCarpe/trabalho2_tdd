@@ -101,6 +101,9 @@ Resultado executarBackup(
         }
 
         if (!arquivoExiste(origem)) {
+            if (!arquivoExiste(destino)) {
+                return Resultado::ERRO;
+            }
             continue;
         }
 
