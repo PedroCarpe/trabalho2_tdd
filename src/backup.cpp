@@ -53,8 +53,6 @@ Resultado executarBackup(
     const std::string& diretorioPendrive,
     Operacao operacao
 ) {
-    // Fase RED de R6: ambos os modos ainda seguem a lógica de backup.
-    (void)operacao;
     
     //Comportamento já implementado em R1
     if(!arquivoExiste(caminhoParm)) {
@@ -78,6 +76,10 @@ Resultado executarBackup(
 
         fs::path origem = fs::path(diretorioHd) / nomeArquivo;
         fs::path destino = fs::path(diretorioPendrive) / nomeArquivo;
+
+        if (operacao == Operacao::RESTAURAR && !arquivoExiste(destino)) {
+            return Resultado::ERRO;
+        }
 
         if (!arquivoExiste(origem)) {
             continue;
