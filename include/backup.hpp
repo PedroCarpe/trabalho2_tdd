@@ -1,7 +1,10 @@
 #ifndef INCLUDE_BACKUP_HPP_
 #define INCLUDE_BACKUP_HPP_
 
-/** @file @brief Interface pública da biblioteca de backup. */
+/**
+ * @file
+ * @brief Interface pública da biblioteca de backup.
+ */
 
 #include <string>
 

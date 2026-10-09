@@ -49,3 +49,21 @@ retorna o resultado de cada item e executarBackup percorre toda a lista.
 Política explicitada (a tabela não define agregação): ERRO prevalece, mas os
 outros itens continuam; sem erros, retorna a ação do modo se houve alguma cópia,
 ou NADA. IMPOSSIVEL cancela antes de ler a lista. Não há rollback de cópias.
+
+Validação adicional — datas, I/O, diagnóstico e infraestrutura
+O teste de repetição encontrou RED: copy_file atribuía data nova, tornando a
+cópia mais recente que a origem. A cópia agora preserva last_write_time;
+regressão GREEN: 16 casos e 179 assertivas. Lista vazia e destino diretório
+foram testados; o diretório revelava NADA indevido em BACKUP. Corrigido para
+ERRO; 18 casos, 199 assertivas. Diagnósticos opcionais preservam as chamadas
+anteriores e passaram após RED com mensagens vazias: 19 casos/209 assertivas.
+
+Refatoração de estilo e contratos: indentação Google, includes, header guard,
+comentários Javadoc e assertivas de entrada/saída. Temporários dos testes
+passaram para build/test_data, dentro do projeto. CPPLINT.cfg explica as
+exceções para C++17, macros Catch2, includes e ausência de atribuição inventada.
+
+O histórico original foi preservado. R8, R11 e R12 não ganharam commits GREEN
+artificiais; os testes já passaram. A avaliação de refatoração foi documentada
+quando não existia extração justificada. A exigência acadêmica literal de três
+commits por teste não foi fabricada retroativamente. O total já supera 30.

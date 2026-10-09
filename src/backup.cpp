@@ -1,4 +1,7 @@
-/** @file @brief Biblioteca de backup dirigida pela tabela de decisão. */
+/**
+ * @file
+ * @brief Biblioteca de backup dirigida pela tabela de decisão.
+ */
 #include "backup.hpp"
 
 #include <cassert>

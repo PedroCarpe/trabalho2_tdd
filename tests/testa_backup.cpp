@@ -1,4 +1,7 @@
-/** @file @brief Testes caixa fechada R1–R13 e regressões de I/O e lista. */
+/**
+ * @file
+ * @brief Testes caixa fechada R1–R13 e regressões de I/O e lista.
+ */
 #include <chrono>
 #include <filesystem>
 #include <fstream>

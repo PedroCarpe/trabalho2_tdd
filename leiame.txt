@@ -1,0 +1,38 @@
+Sistema de Backup — C++17 / TP2
+
+Dependências: g++, make, Catch2 v3 (bibliotecas Catch2Main e Catch2).
+Ferramentas opcionais de validação: gcov, Python 3, cppcheck, cpplint,
+Valgrind, GDB e Doxygen.
+
+Execute na raiz do projeto:
+  make compile       compila a biblioteca e o executável de testes
+  make test          executa todos os testes Catch2
+  make gcov          cobertura de backup.cpp e testa_backup.cpp; exige >= 80%
+  make cpplint       verifica estilo com as escolhas em CPPLINT.cfg
+  make cppcheck      análise estática; avisos causam falha
+  make valgrind      análise dinâmica; relatório em build/valgrind.rpt
+  make debug         abre sessão interativa de GDB
+  make debug-check   reproduz depuração de executarBackup no cenário R6
+  make doc           gera build/documentacao/html/index.html
+  make quality       testes, lint, análise estática, cobertura e Valgrind
+
+Uso da biblioteca (include/backup.hpp):
+  std::string erro;
+  Resultado r = executarBackup("Backup.parm", "hd", "pendrive",
+                               Operacao::BACKUP, &erro);
+  Para restaurar, use Operacao::RESTAURAR.
+  Os três primeiros argumentos são caminhos não vazios. Prepare os diretórios
+  antes da chamada. A lista tem um nome relativo por linha; linhas vazias
+  são ignoradas. Subdiretórios de destino precisam existir previamente.
+
+Todos os itens são processados. ERRO prevalece no retorno global e os
+outros itens continuam. Não há rollback; uma falha de I/O pode deixar uma
+cópia parcial. IMPOSSIVEL cancela se Backup.parm não é arquivo regular.
+A cópia preserva a data de modificação para permitir repetição sem conflito.
+Datas iguais significam NADA mesmo quando os conteúdos diferem (regra da tabela).
+EXCLUIR é reservado: nenhuma coluna da tabela exige exclusão.
+
+A documentação do TDD fica em docs/tdd.md. Veja docs/validacao.md para
+resultados, limites e pendências acadêmicas. Artefatos ficam em build/ e não
+são versionados. Para entrega, inclua .git no ZIP e use o nome exigido pelo
+professor (matricula_primeiro_nome.zip). A matrícula não foi informada.
