@@ -19,3 +19,8 @@ RED: 9 casos, somente R9 falhou (ERRO e conteúdo antigo no HD).
 GREEN: 9 casos e 95 assertivas aprovadas. A cópia inverte origem e destino.
 REFACTOR: processarArquivosExistentes separa decisão por operação da leitura
  da lista, compartilhando comparação e cópia. Regressão: 9/95 aprovados.
+
+R10 — RED / GREEN / avaliação REFACTOR
+RED retornou NADA em vez de ERRO; arquivos permaneceram ausentes.
+GREEN: 10 casos, 102 assertivas aprovadas. A verificação de existência já
+usa o auxiliar comum; nenhuma refatoração adicional foi necessária.
