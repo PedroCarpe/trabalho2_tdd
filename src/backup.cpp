@@ -93,6 +93,12 @@ Resultado executarBackup(
                 return Resultado::ERRO;
             }
             if (ordem == OrdemDatas::POSTERIOR) {
+                if (operacao == Operacao::RESTAURAR) {
+                    if (!salvarArquivo(destino, origem)) {
+                        return Resultado::ERRO;
+                    }
+                    return Resultado::RESTAURAR;
+                }
                 return Resultado::ERRO;
             }
             deveSalvar = ordem == OrdemDatas::ANTERIOR;
