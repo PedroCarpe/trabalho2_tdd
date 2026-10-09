@@ -1,4 +1,5 @@
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/generators/catch_generators.hpp>
 
 #include <chrono>
 #include <filesystem>
@@ -225,4 +226,31 @@ TEST_CASE("R13 - Restaurar: apenas pendrive: RESTAURAR", "[backup][R13]") {
     }
     CHECK(c.Ler(c.pen / "A.txt") == "Pen original");
     CHECK(fs::last_write_time(c.pen / "A.txt") == data);
+}
+
+TEST_CASE("Processa toda a lista em backup e restauracao", "[backup][lista]") {
+    const auto operacao = GENERATE(Operacao::BACKUP, Operacao::RESTAURAR);
+    Cenario c("lista");
+    c.Lista("\nA.txt\nB.txt\n");
+    const auto origem = operacao == Operacao::BACKUP ? c.hd : c.pen;
+    const auto destino = operacao == Operacao::BACKUP ? c.pen : c.hd;
+    c.Escrever(origem / "A.txt", "A");
+    c.Escrever(origem / "B.txt", "B");
+    c.Escrever(origem / "fora.txt", "nao listado");
+    CHECK(c.Executar(operacao) == (operacao == Operacao::BACKUP
+          ? Resultado::SALVAR : Resultado::RESTAURAR));
+    CHECK(fs::is_regular_file(destino / "A.txt"));
+    CHECK(fs::is_regular_file(destino / "B.txt"));
+    if (fs::is_regular_file(destino / "B.txt")) {
+        CHECK(c.Ler(destino / "B.txt") == "B");
+    }
+    CHECK_FALSE(fs::exists(destino / "fora.txt"));
+}
+
+TEST_CASE("Erro em um item nao impede os demais", "[backup][lista][erro]") {
+    Cenario c("lista_erro");
+    c.Lista("ausente.txt\nA.txt\n");
+    c.Escrever(c.hd / "A.txt", "A");
+    CHECK(c.Executar() == Resultado::ERRO);
+    CHECK(fs::is_regular_file(c.pen / "A.txt"));
 }

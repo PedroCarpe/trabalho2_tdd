@@ -38,6 +38,6 @@ Nenhuma mudança de negócio ou extração adicional foi necessária.
 
 R13 — RED / GREEN / avaliação REFACTOR
 RED: NADA em vez de RESTAURAR e arquivo não criado. GREEN: 13 casos,
-132 assertivas aprovadas. A cópia reutiliza salvarArquivo com sentido invertido.
+131 assertivas aprovadas. A cópia reutiliza salvarArquivo com sentido invertido.
 Nenhuma refatoração adicional necessária nesta regra; o requisito de processar
 toda a lista será tratado separadamente por um teste de regressão específico.
