@@ -88,6 +88,10 @@ Resultado executarBackup(
         bool deveSalvar = !fs::exists(destino);
         if (!deveSalvar && arquivoExiste(destino)) {
             const auto ordem = compararDatas(destino, origem);
+            if (operacao == Operacao::RESTAURAR &&
+                ordem == OrdemDatas::ANTERIOR) {
+                return Resultado::ERRO;
+            }
             if (ordem == OrdemDatas::POSTERIOR) {
                 return Resultado::ERRO;
             }
