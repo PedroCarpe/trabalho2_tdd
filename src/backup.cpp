@@ -115,10 +115,15 @@ Resultado executarBackup(
     Operacao operacao,
     std::string* erro
 ) {
-    (void)erro;
+    if (erro != nullptr) {
+        erro->clear();
+    }
     
     //Comportamento já implementado em R1
     if(!arquivoExiste(caminhoParm)) {
+        if (erro != nullptr) {
+            *erro = "Backup.parm ausente ou nao e arquivo regular: " + caminhoParm;
+        }
         return Resultado::IMPOSSIVEL;
     }
 
@@ -126,6 +131,9 @@ Resultado executarBackup(
     std::ifstream parm(caminhoParm);
 
     if (!parm.is_open()) {
+        if (erro != nullptr) {
+            *erro = "Nao foi possivel abrir Backup.parm: " + caminhoParm;
+        }
         return Resultado::ERRO;
     }
 
@@ -144,11 +152,24 @@ Resultado executarBackup(
         const auto resultado = processarArquivo(origem, destino, operacao);
         if (resultado == Resultado::ERRO) {
             resultadoGlobal = Resultado::ERRO;
+            if (erro != nullptr) {
+                if (!erro->empty()) {
+                    *erro += "\n";
+                }
+                *erro += nomeArquivo +
+                    ": origem ausente, versao conflitante ou falha de copia.";
+            }
         } else if (resultadoGlobal != Resultado::ERRO &&
                    resultado != Resultado::NADA) {
             resultadoGlobal = resultado;
         }
     }
     
+    if (parm.bad()) {
+        if (erro != nullptr) {
+            *erro += "\nFalha ao ler Backup.parm: " + caminhoParm;
+        }
+        return Resultado::ERRO;
+    }
     return resultadoGlobal;
 }
